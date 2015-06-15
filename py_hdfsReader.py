@@ -1,5 +1,9 @@
 #!/opt/anaconda/bin/python
 
+
+ECS_ip='192.168.1.5'
+
+
 #def demo():
     ## demo for output of 'ls -l'
     
@@ -80,7 +84,6 @@ import redis
 from subprocess import Popen,PIPE
 if __name__ == "__main__":
     
-    ECS_ip='192.168.1.5'
     
     hdfs_check()
     mr_data = hdfs_read()
