@@ -74,5 +74,5 @@ if __name__ == "__main__":
     pool_redis = hdfs_parse(mr_data)
     print pool_redis
     hdfs_reduce(pool_redis)
-    #hdfs_rmdir()
+    hdfs_rmdir()
 
