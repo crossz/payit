@@ -1,9 +1,10 @@
-#!/usr/bin/python
+#!/opt/anaconda/bin/python
 
 ECS_ip='192.168.1.5'
 
 def hdfs_check():
-    p_succ = Popen(["/opt/hadoop-2.7.0/bin/hdfs", "dfs", "-cat", "/user/_SUCCESS"], stdin=PIPE, stdout=PIPE)
+    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
+    p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     hdfs_succ = p_succ.communicate()
     if p_succ.returncode:
         print("#:: No _SUCCESS!")
@@ -11,7 +12,8 @@ def hdfs_check():
         #print("##: test exit")
 
 def hdfs_read():
-    p_part = Popen(["/opt/hadoop-2.7.0/bin/hdfs", "dfs", "-cat", "/user/part-r-00000"], stdin=PIPE, stdout=PIPE)
+    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/part-r-00000'
+    p_part = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     mr_result = p_part.communicate()
     if p_part.returncode:
         print("#:: No MapReduced!")
@@ -54,7 +56,8 @@ def hdfs_reduce(pool_redis):
             print('#### WARN: no value for this key %s ####' % (r_key))
 
 def hdfs_rmdir():
-    p_rm = Popen(["sudo", "/opt/hadoop-2.7.0/bin/hdfs", "dfs", "-rm", "-r", "/user"], stdin=PIPE, stdout=PIPE)
+    cmd = 'sudo /opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
+    p_rm = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     hdfs_rm = p_rm.communicate()
     if p_rm.returncode:
         print('##: Remove mapreduce result failed!')
