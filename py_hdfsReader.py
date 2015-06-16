@@ -36,15 +36,42 @@ def hdfs_parse(mr_data):
     return pool_redis
 
 
-def hdfs_reduce(pool_redis):
+def hdfs_reduce_inv(pool_redis):
     #ECS_ip='192.168.1.5'
     cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
     c = pool_redis
     for cc in c:
+        r_key = cc[0]
+        r_val = cc[1]
+
         try:
         #if r_val_old:
-            r_key = cc[0]
-            r_val = cc[1]
+            r_val_old = cu_r.get(r_key)
+
+            r_val_new = float(r_val_old) - float(r_val)
+            cu_r.set(r_key, r_val_new)
+            print('%s : %s -> %f' % (r_key, r_val_old, r_val_new))
+        except Exception as e:
+        #else:
+            print('#### WARN: no value for this key %s ####' % (r_key))
+            print e
+
+
+def hdfs_reduce_comb(pool_redis):
+    #ECS_ip='192.168.1.5'
+    cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
+    d = pool_redis
+    
+    
+
+
+
+    for cc in c:
+        r_key = cc[0]
+        r_val = cc[1]
+
+        try:
+        #if r_val_old:
 
             r_val_old = cu_r.get(r_key)
 
@@ -54,6 +81,8 @@ def hdfs_reduce(pool_redis):
         except Exception as e:
         #else:
             print('#### WARN: no value for this key %s ####' % (r_key))
+            print e
+
 
 def hdfs_rmdir():
     cmd = 'sudo /opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
@@ -71,11 +100,15 @@ def hdfs_rmdir():
 
 import redis
 from subprocess import Popen,PIPE
+import py_hdfsReader as pr
+
 if __name__ == "__main__":
-    hdfs_check()
-    mr_data = hdfs_read()
-    pool_redis = hdfs_parse(mr_data)
+
+    pr.hdfs_check()
+    mr_data = pr.hdfs_read()
+    pool_redis = pr.hdfs_parse(mr_data)
     print pool_redis
-    hdfs_reduce(pool_redis)
-    hdfs_rmdir()
+    pr.hdfs_reduce_inv(pool_redis)
+    #pr.hdfs_reduce_comb(pool_redis)
+    #pr.hdfs_rmdir()
 
