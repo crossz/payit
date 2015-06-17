@@ -25,11 +25,11 @@ check(){
 
 
 mapreduce(){
-    python /home/ubuntu/payit/py_payout.py 2011 1 X[-1]
+    sudo python /home/ubuntu/payit/py_payout.py 2011 1 X[-1]
 }
 
 redisupdate(){
-    python /home/ubuntu/payit/py_hdfsReader.py
+    sudo python /home/ubuntu/payit/py_hdfsReader.py
  
 }
 

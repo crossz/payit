@@ -85,7 +85,7 @@ def hdfs_reduce_comb(pool_redis):
 
 
 def hdfs_rmdir():
-    cmd = 'sudo /opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
+    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
     p_rm = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     hdfs_rm = p_rm.communicate()
     if p_rm.returncode:
