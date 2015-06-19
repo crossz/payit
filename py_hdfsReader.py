@@ -1,7 +1,17 @@
 #!/opt/anaconda/bin/python
 
-ECS_ip='192.168.1.5'
+# %% subfunctions: system level:
+import socket, fcntl, struct
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+        )[20:24])
 
+
+# %% func
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
     p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
@@ -38,6 +48,7 @@ def hdfs_parse(mr_data):
 
 def hdfs_reduce_inv(pool_redis):
     #ECS_ip='192.168.1.5'
+    ECS_ip = get_ip_address('eth0')
     cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
     c = pool_redis
     for cc in c:
