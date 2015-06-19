@@ -49,6 +49,9 @@ def hdfs_reduce_inv(pool_redis):
             r_val_old = cu_r.get(r_key)
 
             r_val_new = float(r_val_old) - float(r_val)
+            r_val_new = round(r_val_new,2)
+            #"{0:.2f}".format(r_val_new)
+
             cu_r.set(r_key, r_val_new)
             print('%s : %s -> %f' % (r_key, r_val_old, r_val_new))
         except Exception as e:
