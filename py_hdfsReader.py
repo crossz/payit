@@ -47,8 +47,8 @@ def hdfs_parse(mr_data):
 
 
 def hdfs_reduce_inv(pool_redis):
-    #ECS_ip='192.168.1.5'
     ECS_ip = get_ip_address('eth0')
+
     cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
     c = pool_redis
     for cc in c:
@@ -61,8 +61,10 @@ def hdfs_reduce_inv(pool_redis):
 
             r_val_new = float(r_val_old) - float(r_val)
             r_val_new = round(r_val_new,2)
-            cu_r.set(r_key, str(r_val_new))
+            #r_val_new = "{0:.4f}".format(r_val_new)
+            cu_r.set(r_key, r_val_new)
             print('%s : %s -> %f' % (r_key, r_val_old, r_val_new))
+            print(r_val_new)
         except Exception as e:
         #else:
             print('#### WARN: no value for this key %s ####' % (r_key))
