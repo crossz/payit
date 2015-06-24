@@ -1,8 +1,5 @@
 #!/opt/anaconda/bin/python
 
-print 'hello'
-
-
 ECS_ip = '192.168.1.5'
 # %% func
 def hdfs_check():
@@ -91,25 +88,25 @@ def is_contains_key(key, set):
 
 def hdfs_reduce_comb(args):
     
-    cu_r = redis.Redis(host="192.168.1.161", port=6379, db = 0)
+    cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
     
     result = get_match_key(args)
     
     code = args[0]
 
-    keys = cu_r.keys('(allUp*' + code + '*investment')
+    keys = cu_r.keys('(allUp*' + code + '*aliveInvestment')
     for key in keys:
         hkeys = cu_r.hkeys(key)
         
         for hkey in hkeys:
-            if (not is_contains_key(hkey, result)) and hkey != 'totalInvestment':
+            if (not is_contains_key(hkey, result)) and hkey != 'totalAliveInvestment':
                 pipe = cu_r.pipeline(True, None)
                 while 1:
                     try:
                         pipe.watch(key)
                         value = pipe.hget(key, hkey)
-                        totalAliveInvestment = pipe.hget(key, 'totalInvestment')
-                        pipe.hset(key, 'totalInvestment', float(totalAliveInvestment) - float(value))
+                        totalAliveInvestment = pipe.hget(key, 'totalAliveInvestment')
+                        pipe.hset(key, 'totalAliveInvestment', float(totalAliveInvestment) - float(value))
                         pipe.hdel(key, hkey)
                         
                         exec_value = pipe.execute()
