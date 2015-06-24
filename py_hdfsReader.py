@@ -1,5 +1,8 @@
 #!/opt/anaconda/bin/python
 
+print 'hello'
+
+
 ECS_ip = '192.168.1.5'
 # %% func
 def hdfs_check():
