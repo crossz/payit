@@ -1,16 +1,6 @@
 #!/opt/anaconda/bin/python
 
-# %% subfunctions: system level:
-import socket, fcntl, struct
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-        )[20:24])
-
-
+ECS_ip = '192.168.1.5'
 # %% func
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
@@ -19,7 +9,7 @@ def hdfs_check():
     if p_succ.returncode:
         print("#:: No _SUCCESS!")
         exit(2) 
-        #print("##: test exit")
+
 
 def hdfs_read():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/part-r-00000'
@@ -32,6 +22,7 @@ def hdfs_read():
         mr_data = mr_result[0]
     
     return mr_data    
+
 
 def hdfs_parse(mr_data):
     a = mr_data.rstrip('\n')
@@ -47,8 +38,7 @@ def hdfs_parse(mr_data):
 
 
 def hdfs_reduce_inv(pool_redis):
-    ECS_ip = get_ip_address('eth0')
-
+    
     cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
     c = pool_redis
     for cc in c:
@@ -69,33 +59,63 @@ def hdfs_reduce_inv(pool_redis):
         #else:
             print('#### WARN: no value for this key %s ####' % (r_key))
             print e
+        
 
-
-def hdfs_reduce_comb(pool_redis):
-    #ECS_ip='192.168.1.5'
-    cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
-    d = pool_redis
+def get_match_key(args):
+    code = args[0]
     
+    args = args[1:]
     
+    result = []
+    
+    i = 0
+    while i < len(args):
+        product = args[i]
+        option = args[i + 1]
+        result.append(code + product + option)
+        i = i + 2
+    
+    return result
 
 
+def is_contains_key(key, set):
+    for element in set:
+        if element in key:
+            return True
+        
+    return False
 
-    for cc in c:
-        r_key = cc[0]
-        r_val = cc[1]
 
-        try:
-        #if r_val_old:
+def hdfs_reduce_comb(args):
+    
+    cu_r = redis.Redis(host="192.168.1.161", port=6379, db = 0)
+    
+    result = get_match_key(args)
+    
+    code = args[0]
 
-            r_val_old = cu_r.get(r_key)
+    keys = cu_r.keys('(allUp*' + code + '*investment')
+    for key in keys:
+        hkeys = cu_r.hkeys(key)
+        
+        for hkey in hkeys:
+            if (not is_contains_key(hkey, result)) and hkey != 'totalInvestment':
+                pipe = cu_r.pipeline(True, None)
+                while 1:
+                    try:
+                        pipe.watch(key)
+                        value = pipe.hget(key, hkey)
+                        totalAliveInvestment = pipe.hget(key, 'totalInvestment')
+                        pipe.hset(key, 'totalInvestment', float(totalAliveInvestment) - float(value))
+                        pipe.hdel(key, hkey)
+                        
+                        exec_value = pipe.execute()
 
-            r_val_new = float(r_val_old) - float(r_val)
-            cu_r.set(r_key, r_val_new)
-            print('%s : %s -> %f' % (r_key, r_val_old, r_val_new))
-        except Exception as e:
-        #else:
-            print('#### WARN: no value for this key %s ####' % (r_key))
-            print e
+                        if len(exec_value) == 0:
+                            break
+                        
+                    except WatchError:
+                        continue
 
 
 def hdfs_rmdir():
@@ -107,22 +127,20 @@ def hdfs_rmdir():
         exit(3)
     else:
         print('##: Data cleared!')
-
-
-
-
+        
 
 import redis
+import sys
 from subprocess import Popen,PIPE
-import py_hdfsReader as pr
+from redis.exceptions import WatchError
 
 if __name__ == "__main__":
-
-    pr.hdfs_check()
-    mr_data = pr.hdfs_read()
-    pool_redis = pr.hdfs_parse(mr_data)
+    args = sys.argv
+    hdfs_check()
+    mr_data = hdfs_read()
+    pool_redis = hdfs_parse(mr_data)
     print pool_redis
-    pr.hdfs_reduce_inv(pool_redis)
+    hdfs_reduce_inv(pool_redis)
+    hdfs_reduce_comb(args)
     #pr.hdfs_reduce_comb(pool_redis)
     #pr.hdfs_rmdir()
-
