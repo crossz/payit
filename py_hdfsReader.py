@@ -1,7 +1,22 @@
-#!/opt/anaconda/bin/python
+#!/usr/bin/python
 
 ECS_ip = '192.168.1.5'
-# %% func
+
+# %% subfunctions: system level:
+import socket, fcntl, struct
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+        )[20:24])
+
+
+ECS_ip = get_ip_address('eth0')
+
+
+# %% func ############################################################
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
     p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)

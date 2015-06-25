@@ -7,11 +7,11 @@ date > /opt/logs/py_hadoop.log
 echo $* >> /opt/logs/py_hadoop.log
 
 #/opt/anaconda/bin/python /home/ubuntu/payit/py_payout.py 2011 1 X[-1] /opt/logs/py_hadoop.log >> /opt/logs/py_hadoop.log 2>&1
-sudo python payit/py_payout.py $* >> /opt/logs/py_hadoop.log 2>&1
+sudo python py_payout.py $* >> /opt/logs/py_hadoop.log 2>&1
 echo $?
 
 #sudo /opt/anaconda/bin/python /home/ubuntu/payit/py_hdfsReader.py >> /opt/logs/py_hadoop.log 2>&1
-sudo python payit/py_hdfsReader.py >> /opt/logs/py_hadoop.log 2>&1
+sudo python py_hdfsReader.py >> /opt/logs/py_hadoop.log 2>&1
 echo $?
 
 echo $* >> /opt/logs/py_hadoop.log

@@ -1,4 +1,4 @@
-#!/opt/anaconda/bin/python
+#!/usr/bin/python
 
 def hadoop_pay(args):
 
