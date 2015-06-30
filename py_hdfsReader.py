@@ -123,7 +123,7 @@ def hdfs_reduce_comb(args):
                         totalAliveInvestment = pipe.hget(key, 'totalAliveInvestment')
                         pipe.hset(key, 'totalAliveInvestment', float(totalAliveInvestment) - float(value))
                         pipe.hdel(key, hkey)
-                        
+                        print ('key:%s with hkey:%s has been deleted' % (key, hkey))
                         exec_value = pipe.execute()
 
                         if len(exec_value) == 0:
