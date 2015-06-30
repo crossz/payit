@@ -106,14 +106,16 @@ def hdfs_reduce_comb(args):
     cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
     
     result = get_match_key(args)
-    
+    print(result)
     code = args[0]
 
     keys = cu_r.keys('(allUp*' + code + '*aliveInvestment')
+    print(keys)
     for key in keys:
         hkeys = cu_r.hkeys(key)
         
         for hkey in hkeys:
+            print(hkey)
             if (not is_contains_key(hkey, result)) and hkey != 'totalAliveInvestment':
                 pipe = cu_r.pipeline(True, None)
                 while 1:
@@ -123,7 +125,7 @@ def hdfs_reduce_comb(args):
                         totalAliveInvestment = pipe.hget(key, 'totalAliveInvestment')
                         pipe.hset(key, 'totalAliveInvestment', float(totalAliveInvestment) - float(value))
                         pipe.hdel(key, hkey)
-                        print ('key:%s with hkey:%s has been deleted' % (key, hkey))
+                        print('key:%s with hkey:%s has been deleted' % (key, hkey))
                         exec_value = pipe.execute()
 
                         if len(exec_value) == 0:
