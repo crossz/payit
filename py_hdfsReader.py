@@ -108,7 +108,7 @@ def hdfs_reduce_comb(args):
     result = get_match_key(args)
     print(result)
     code = args[0]
-
+    tmp = '(allUp*' + code + '*aliveInvestment'
     keys = cu_r.keys('(allUp*' + code + '*aliveInvestment')
     print(keys)
     for key in keys:
@@ -153,11 +153,12 @@ from redis.exceptions import WatchError
 
 if __name__ == "__main__":
     args = sys.argv
+    print args[1::]
     hdfs_check()
     mr_data = hdfs_read()
     pool_redis = hdfs_parse(mr_data)
     print pool_redis
     hdfs_reduce_inv(pool_redis)
-    hdfs_reduce_comb(args)
+    hdfs_reduce_comb(args[1::])
     #pr.hdfs_reduce_comb(pool_redis)
     #pr.hdfs_rmdir()
