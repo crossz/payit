@@ -157,7 +157,7 @@ def hdfs_reduce_comb(args):
                 try:
                     pipe.watch(hkey)
                     value = pipe.hget(hkey, key)
-                    if is_contains_key(key, result) and value != -1: #中奖了
+                    if is_contains_key(key, result) and value > 0: #中奖了
                         result = pipe.hincrby(key, hkey, -1)
                         if result == 0:
                             totalInvestment = pipe.hget(hkey.replace('aliveI', 'i'), 'totalInvestment')
