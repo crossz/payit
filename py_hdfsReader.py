@@ -15,6 +15,8 @@ def get_ip_address(ifname):
 
 ECS_ip = get_ip_address('eth0')
 
+pool_redis = dict()
+resulted_pool = list()
 # %% func ############################################################
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
@@ -42,7 +44,6 @@ def hdfs_parse(mr_data):
     a = mr_data.rstrip('\n')
     aa=a.split('\n')
 
-    pool_redis = dict()
 
     for b in aa:
         bb = b.split('\t')
@@ -54,7 +55,7 @@ def hdfs_parse(mr_data):
     else:
         return pool_redis
 
-resulted_pool = list()
+
 
 ##################################################################
 #first step        
