@@ -15,7 +15,6 @@ def get_ip_address(ifname):
 
 ECS_ip = get_ip_address('eth0')
 
-
 # %% func ############################################################
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
@@ -43,39 +42,40 @@ def hdfs_parse(mr_data):
     a = mr_data.rstrip('\n')
     aa=a.split('\n')
 
-    pool_redis = list()
+    pool_redis = dict()
 
     for b in aa:
         bb = b.split('\t')
-        pool_redis.append(bb)
-
-    return pool_redis
-
-
-def hdfs_reduce_inv(pool_redis):
-    
-    cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
-    c = pool_redis
-    for cc in c:
-        r_key = cc[0]
-        r_val = cc[1]
-
-        try:
-        #if r_val_old:
-            r_val_old = cu_r.get(r_key)
-
-            r_val_new = float(r_val_old) - float(r_val)
-            r_val_new = round(r_val_new,2)
-            #r_val_new = "{0:.4f}".format(r_val_new)
-            cu_r.set(r_key, r_val_new)
-            print('%s : %s -> %f' % (r_key, r_val_old, r_val_new))
-            print(r_val_new)
-        except Exception as e:
-        #else:
-            print('#### WARN: no value for this key %s ####' % (r_key))
-            print e
+        pool_redis[bb[0]] = bb[1]
         
+    if len(pool_redis) == 0:
+        print('nothings in pool_redis')
+        exit(0)
+    else:
+        return pool_redis
 
+resulted_pool = list()
+
+##################################################################
+#first step        
+#executed in redis transaction
+def redis_update(pipe):
+    for element in pool_redis:
+        if element != 'profiting':
+            print('%s decreased by %s' % (element, pool_redis[element]))
+            pipe.incrbyfloat(element, -float(pool_redis[element]))
+        else:
+            print('%s increased by %s' % (element, pool_redis[element]))
+            pipe.incrbyfloat(element, float(pool_redis[element]))
+
+def allUpAliveInvestment_decrease(pool_redis):
+    redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
+    global pool_redis
+    redis_client.transaction(redis_update, pool_redis.keys())
+
+##################################################################
+#second step
+#find the winning key
 def get_match_key(args):
     code = args[0]
     
@@ -92,7 +92,7 @@ def get_match_key(args):
     
     return result
 
-
+#whether the element in set contains key
 def is_contains_key(key, set):
     for element in set:
         if element in key:
@@ -100,40 +100,69 @@ def is_contains_key(key, set):
         
     return False
 
-def update_min_position():
-    cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
-    keys = cu_r.keys('*minPosition')
-    total = 0
-    for key in keys:
-        if '(' in key:
-            aliveInv = cu_r.hgetall(key.replace('minPosition', 'aliveInvestment'))
-            if len(aliveInv) == 3 ** aliveInv.values()[0]:
-                keys = aliveInv.keys()
-                min = 9999999
-                
-                for key in keys:
-                    position = float(cu_r.hget(key.replace('minPosition', 'position'), key))
-                    if position < min:
-                        min = position
-                        
-                cu_r.set(key, min)
-                total = total + min
-            
-        else: 
-            get = cu_r.get(key)
-            total = total + get
+#modify the alive_m in aliveInvestment
+#-1 = dead; 0 = win; >0 = alive
+#DO NOT PAY OUT THE SAME MATCH WITH SAME OPTION TWICE 
+def aliveInvestment_modified(args):
+    redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
     
-    cu_r.set('riskInvestment', total)
-
-
-def hdfs_reduce_comb(args):
-    
-    cu_r = redis.Redis(host=ECS_ip, port=6379, db = 0)
-    
-    #单关部分
+    code = args[0]
     result = get_match_key(args)
     print(result)
-    
+    fuzzy_key = '(allUp*' + code + '*aliveInvestment'
+    #find all aliveInvestment which contains current match(code)
+    hkeys = redis_client.keys(fuzzy_key)
+    for hkey in hkeys:
+        keys = redis_client.hkeys(hkey)
+        for key in keys:
+            #if the clause contains winning option
+            if is_contains_key(key, result):
+                #value(alive_m) is decreased by 1
+                hincrby = redis_client.hincrby(hkey, key, -1)
+                #add the clause to resulted pool if it is sure to win
+                if int(hincrby) == 0:
+                    resulted_pool.append(hkey)
+                print('hkey:%s with key:%s has been decreased by 1' % (hkey, key))
+            # if not winning
+            else:
+                #value is set to -1 directly
+                redis_client.hset(hkey, key, -1)
+                flag = True
+                values = pipe.hgetall(hkey).values()
+                #if all the clause in pool are dead. if so, add to resulted pool
+                for value in values:
+                    if int(value) == -1 :
+                        continue
+                    flag = False
+                if flag:
+                    resulted_pool.append(hkey)
+                
+                print('hkey:%s with key:%s has been set to -1' % (hkey, key))
+                
+####################################################################################
+#third step
+def update_min_position(code):
+    redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
+    #find all minPosition related with current match
+    keys = redis_client.keys('(allUp*' + code + '*minPosition')
+    total = 0
+    for key in keys:
+        aliveInv = redis_client.hgetall(key.replace('minPosition', 'aliveInvestment'))
+        #it's a long story...anyway, minimum position will be found and updated
+        if len(aliveInv) == 3 ** aliveInv.values()[0]:
+            keys = aliveInv.keys()
+            min = 99999999
+            
+            for key in keys:
+                position = float(redis_client.hget(key.replace('minPosition', 'position'), key))
+                if position < min:
+                    min = position
+                    
+            redis_client.set(key, min)
+
+def TotalAliveInvestment_decrease(args):
+    #single first
+    result = get_match_key(args)
     for i in range(len(result) - 1):
         totalPrice = cu_r.get(args[0] + args[2 * i + 1] + 'totalPrice' + args[2 * i + 2])
         totalInvest = cu_r.get(args[0] + args[2 * i + 1] + 'totalInvest')
@@ -141,55 +170,14 @@ def hdfs_reduce_comb(args):
         cu_r.incrbyfloat('TotalAliveInvestment', -float(totalInvest))
         cu_r.delete(args[0] + args[2 * i + 1] + 'minPosition')
     
-    
-    code = args[0]
-    tmp = '(allUp*' + code + '*aliveInvestment'
-    hkeys = cu_r.keys('(allUp*' + code + '*aliveInvestment')
-    print(hkeys)
-    for hkey in hkeys:
-        keys = cu_r.hkeys(hkey)
-        
-        for key in keys:
-            print(key)
-            
-            pipe = cu_r.pipeline(True, None)
-            while 1:
-                try:
-                    pipe.watch(hkey)
-                    value = pipe.hget(hkey, key)
-                    if is_contains_key(key, result) and value > 0: #中奖了
-                        result = pipe.hincrby(key, hkey, -1)
-                        if result == 0:
-                            totalInvestment = pipe.hget(hkey.replace('aliveI', 'i'), 'totalInvestment')
-                            pipe.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
-                            pipe.delete(hkey.replace('aliveInvestment', 'minPosition'))
-#                             get = pool_redis.get('aliveInvestReduce', 0)
-#                             pool_redis['aliveInvestReduce'] = get + totalInvestment
-                        
-                        print('hkey:%s with key:%s has been decreased by 1' % (hkey, key))
-                    else: #没中奖
-                        pipe.hset(hkey, key, -1)
-                        values = pipe.hgetall(hkey).values()
-                        flag = True
-                        for value in values:
-                            if value == -1 :
-                                continue
-                            flag = False
-                        if flag:
-                            totalInvestment = pipe.hget(hkey.replace('aliveI', 'i'), 'totalInvestment')
-                            pipe.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
-                            pipe.delete(hkey.replace('aliveInvestment', 'minPosition'))
-#                             get = pool_redis.get('aliveInvestReduce', 0)
-#                             pool_redis['aliveInvestReduce'] = get + totalInvestment
-                        print('hkey:%s with key:%s has been set to -1' % (hkey, key))
-                    exec_value = pipe.execute()
-                    if len(exec_value) == 0:
-                        break
-                    
-                except WatchError:
-                    continue
+    #then allup
+    redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
+    for pool in resulted_pool:
+        hkey = pool.replace('aliveInvestment', 'investment')
+        totalInvestment = redis_client.hget(hkey, 'totalInvestment')
+        redis_client.incrbyfloat('TotalAliveInvestment', -totalInvestment)
 
-
+######################################################################################
 def hdfs_rmdir():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
     p_rm = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
@@ -209,12 +197,14 @@ from redis.exceptions import WatchError
 if __name__ == "__main__":
     args = sys.argv
     print args[1::]
+    args = args[1::]
     hdfs_check()
     mr_data = hdfs_read()
     pool_redis = hdfs_parse(mr_data)
     print pool_redis
-    hdfs_reduce_inv(pool_redis)
-    hdfs_reduce_comb(args[1::])
-    update_min_position()
+    allUpAliveInvestment_decrease(pool_redis)
+    aliveInvestment_modified(args)
+    update_min_position(args[0])
+    TotalAliveInvestment_decrease(args)
     #pr.hdfs_reduce_comb(pool_redis)
     #pr.hdfs_rmdir()

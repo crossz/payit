@@ -2,7 +2,7 @@
 
 def hadoop_pay(args):
 
-    cmd = '/opt/hadoop-2.7.0/bin/hadoop jar /opt/hadoop-2.7.0/testHadoop3.jar com.caiex.payout.start.PayOutStart'
+    cmd = '/opt/hadoop-2.7.0/bin/hadoop jar /opt/hadoop/payit/payout.jar com.caiex.payout.start.PayOutStart'
     
     p_pay = Popen(cmd.split() + args , stdin=PIPE, stdout=PIPE)
     p_pay.communicate()
