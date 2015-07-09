@@ -15,7 +15,7 @@ def get_ip_address(ifname):
 
 ECS_ip = get_ip_address('eth0')
 
-pool_redis = dict()
+global pool_redis
 resulted_pool = list()
 # %% func ############################################################
 def hdfs_check():
@@ -42,18 +42,19 @@ def hdfs_read():
 
 def hdfs_parse(mr_data):
     a = mr_data.rstrip('\n')
-    aa=a.split('\n')
+    
+    if len(a) == 0:
+        print('nothing is in hdfs')
+        exit(0)
+    aa = a.split('\n')
 
+    pool_redis = dict()
 
     for b in aa:
         bb = b.split('\t')
         pool_redis[bb[0]] = bb[1]
         
-    if len(pool_redis) == 0:
-        print('nothings in pool_redis')
-        exit(0)
-    else:
-        return pool_redis
+    return pool_redis
 
 
 
@@ -71,7 +72,6 @@ def redis_update(pipe):
 
 def allUpAliveInvestment_decrease(pool_redis):
     redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
-    global pool_redis
     redis_client.transaction(redis_update, pool_redis.keys())
 
 ##################################################################
