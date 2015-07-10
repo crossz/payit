@@ -129,7 +129,7 @@ def aliveInvestment_modified(args):
                 #value is set to -1 directly
                 redis_client.hset(hkey, key, -1)
                 flag = True
-                values = pipe.hgetall(hkey).values()
+                values = redis_client.hgetall(hkey).values()
                 #if all the clause in pool are dead. if so, add to resulted pool
                 for value in values:
                     if int(value) == -1 :
@@ -150,34 +150,44 @@ def update_min_position(code):
     for key in keys:
         aliveInv = redis_client.hgetall(key.replace('minPosition', 'aliveInvestment'))
         #it's a long story...anyway, minimum position will be found and updated
-        if len(aliveInv) == 3 ** aliveInv.values()[0]:
+        if len(aliveInv) == 3 ** int(aliveInv.values()[0]):
             keys = aliveInv.keys()
-            min = 99999999
+            min_num = 99999999
             
             for key in keys:
-                position = float(redis_client.hget(key.replace('minPosition', 'position'), key))
-                if position < min:
-                    min = position
+                try:
+                    position = float(redis_client.hget(key.replace('minPosition', 'position'), key))
+                except Exception as e:
+                    print('%s does not exsit' % (key.replace('minPosition', 'position'
+)))
+                if position < min_num:
+                    min_num = position
                     
-            redis_client.set(key, min)
+            redis_client.set(key, min_num)
 
 def TotalAliveInvestment_decrease(args):
+    redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
+    
     #single first
     result = get_match_key(args)
     for i in range(len(result) - 1):
-        totalPrice = cu_r.get(args[0] + args[2 * i + 1] + 'totalPrice' + args[2 * i + 2])
-        totalInvest = cu_r.get(args[0] + args[2 * i + 1] + 'totalInvest')
-        cu_r.incrbyfloat('profiting', float(totalPrice))
-        cu_r.incrbyfloat('TotalAliveInvestment', -float(totalInvest))
-        cu_r.delete(args[0] + args[2 * i + 1] + 'minPosition')
-    
+        totalPrice = redis_client.get(args[0] + args[2 * i + 1] + 'totalPrice' + args[2 * i + 2])
+        totalInvest = redis_client.get(args[0] + args[2 * i + 1] + 'totalInvest')
+        try:
+            redis_client.incrbyfloat('profiting', float(totalPrice))
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvest))
+            redis_client.delete(args[0] + args[2 * i + 1] + 'minPosition')
+        except Exception as e:
+            print('Single data missed')
+
     #then allup
-    redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
     for pool in resulted_pool:
         hkey = pool.replace('aliveInvestment', 'investment')
         totalInvestment = redis_client.hget(hkey, 'totalInvestment')
-        redis_client.incrbyfloat('TotalAliveInvestment', -totalInvestment)
-
+	try:
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
+        except Exception as e:
+            print('Allup data missed')
 ######################################################################################
 def hdfs_rmdir():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
