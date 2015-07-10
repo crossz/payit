@@ -3,7 +3,11 @@
 ECS_ip = '192.168.1.5'
 
 # %% subfunctions: system level:
-import socket, fcntl, struct
+import socket
+import fcntl
+import struct
+
+
 def get_ip_address(ifname):
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     return socket.inet_ntoa(fcntl.ioctl(
@@ -13,15 +17,17 @@ def get_ip_address(ifname):
         )[20:24])
 
 
-ECS_ip = get_ip_address('eth0')
+# ECS_ip = get_ip_address('eth0')
 
 global pool_redis
 resulted_pool = list()
 # %% func ############################################################
+
+
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
     p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
-    hdfs_succ = p_succ.communicate()
+    #hdfs_succ = p_succ.communicate()
     if p_succ.returncode:
         print("#:: No _SUCCESS!")
         exit(2) 
@@ -57,7 +63,6 @@ def hdfs_parse(mr_data):
     return pool_redis
 
 
-
 ##################################################################
 #first step        
 #executed in redis transaction
@@ -70,9 +75,11 @@ def redis_update(pipe):
             print('%s increased by %s' % (element, pool_redis[element]))
             pipe.incrbyfloat(element, float(pool_redis[element]))
 
+
 def allUpAliveInvestment_decrease(pool_redis):
     redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
     redis_client.transaction(redis_update, pool_redis.keys())
+
 
 ##################################################################
 #second step
@@ -93,6 +100,7 @@ def get_match_key(args):
     
     return result
 
+
 #whether the element in set contains key
 def is_contains_key(key, set):
     for element in set:
@@ -100,6 +108,7 @@ def is_contains_key(key, set):
             return True
         
     return False
+
 
 #modify the alive_m in aliveInvestment
 #-1 = dead; 0 = win; >0 = alive
@@ -139,7 +148,8 @@ def aliveInvestment_modified(args):
                     resulted_pool.append(hkey)
                 
                 print('hkey:%s with key:%s has been set to -1' % (hkey, key))
-                
+
+
 ####################################################################################
 #third step
 def update_min_position(code):
@@ -158,12 +168,12 @@ def update_min_position(code):
                 try:
                     position = float(redis_client.hget(key.replace('minPosition', 'position'), key))
                 except Exception as e:
-                    print('%s does not exsit' % (key.replace('minPosition', 'position'
-)))
+                    print('%s does not exsit' % (key.replace('minPosition', 'position')))
                 if position < min_num:
                     min_num = position
                     
             redis_client.set(key, min_num)
+
 
 def TotalAliveInvestment_decrease(args):
     redis_client = redis.Redis(host=ECS_ip, port=6379, db = 0)
@@ -184,10 +194,12 @@ def TotalAliveInvestment_decrease(args):
     for pool in resulted_pool:
         hkey = pool.replace('aliveInvestment', 'investment')
         totalInvestment = redis_client.hget(hkey, 'totalInvestment')
-	try:
-            redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
-        except Exception as e:
-            print('Allup data missed')
+    try:
+        redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
+    except Exception as e:
+        print('Allup data missed')
+
+
 ######################################################################################
 def hdfs_rmdir():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
