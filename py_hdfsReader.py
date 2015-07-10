@@ -186,6 +186,7 @@ def TotalAliveInvestment_decrease(args):
         try:
             redis_client.incrbyfloat('profiting', float(totalPrice))
             redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvest))
+            #remove current single minimum position from risk investment
             redis_client.delete(args[0] + args[2 * i + 1] + 'minPosition')
         except Exception as e:
             print('Single data missed')
@@ -194,12 +195,12 @@ def TotalAliveInvestment_decrease(args):
     for pool in resulted_pool:
         hkey = pool.replace('aliveInvestment', 'investment')
         totalInvestment = redis_client.hget(hkey, 'totalInvestment')
-    try:
-        redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
-    except Exception as e:
-        print('Allup data missed')
-
-
+        try:
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(totalInvestment))
+            #remove current allup minimum position from risk investment
+            redis_client.delete(hkey = pool.replace('aliveInvestment', 'minPosition'))
+        except Exception as e:
+            print('Allup data missed')
 ######################################################################################
 def hdfs_rmdir():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
