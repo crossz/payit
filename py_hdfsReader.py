@@ -190,7 +190,6 @@ def totalaliveinvestment_decrease(args0):
         total_price = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalPrice' + args0[2 * i + 2])
         total_invest = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalInvest')
         try:
-            redis_client.incrbyfloat('profiting', float(total_price))
             redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
             # remove current single minimum position from risk investment
             redis_client.delete(args0[0] + args0[2 * i + 1] + 'minPosition')
