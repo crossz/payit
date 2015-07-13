@@ -173,10 +173,11 @@ def update_min_position(code):
 
             for key2 in keys2:
                 try:
-                    position = float(redis_client.hget(key2.replace('minPosition', 'position'), key2))
+                    position = float(redis_client.hget(key1.replace('minPosition', 'position'), key2))
+                    
                 except Exception as e:
                     print(e)
-                    print('%s does not exist' % (key2.replace('minPosition', 'position')))
+                    print('%s %s do not exist' % (key1.replace('minPosition', 'position', key2)))
                 if position < min_num:
                     min_num = position
 
