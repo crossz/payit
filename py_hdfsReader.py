@@ -1,9 +1,8 @@
 #!/usr/bin/python
 
 ##: temp setting:
-ECS_ip = '192.168.1.5'
+#ECS_ip = '192.168.1.5'
 
-# %% subfunctions: system level:
 import socket
 import fcntl
 import struct
@@ -18,7 +17,12 @@ def get_ip_address(ifname):
     )[20:24])
 
 
-#### 
+ECS_ip = get_ip_address('eth0')
+
+
+######################### 
+
+
 import redis
 import sys
 from subprocess import Popen, PIPE
@@ -27,9 +31,8 @@ from subprocess import Popen, PIPE
 redis_client = redis.Redis(host=ECS_ip, port=6379, db=0)
 resulted_pool = list()
 
-ECS_ip = get_ip_address('eth0')
 
-# %% func ############################################################
+# #### %% func ###############################################
 
 
 def hdfs_check():
