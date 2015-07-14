@@ -31,12 +31,15 @@ from subprocess import Popen, PIPE
 redis_client = redis.Redis(host=ECS_ip, port=6379, db=0)
 resulted_pool = list()
 
+ECS_ip = get_ip_address('eth0')
+dir_name = ''
+# %% func ############################################################
 
 # #### %% func ###############################################
 
 
 def hdfs_check():
-    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/_SUCCESS'
+    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /' + dir_name + '/_SUCCESS'
     p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     # hdfs_succ = p_succ.communicate()
     p_succ.communicate()
@@ -46,7 +49,7 @@ def hdfs_check():
 
 
 def hdfs_read():
-    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /user/part-r-00000'
+    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /' + dir_name + '/part-r-00000'
     p_part = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     mr_result = p_part.communicate()
     mr_data0 = None
@@ -202,6 +205,7 @@ def totalaliveinvestment_decrease(args0):
             print('Single data missed')
 
     # then all up
+    print resulted_pool
     for pool in resulted_pool:
         hkey = pool.replace('aliveInvestment', 'investment')
         total_investment = redis_client.hget(hkey, 'totalInvestment')
@@ -231,6 +235,9 @@ if __name__ == "__main__":
     args = sys.argv
     print args[1::]
     args = args[1::]
+    for arg in args:
+        dir_name += arg
+    print dir_name
     hdfs_check()
     mr_data = hdfs_read()
     pool_redis = hdfs_parse(mr_data)
