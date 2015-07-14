@@ -31,11 +31,8 @@ from subprocess import Popen, PIPE
 redis_client = redis.Redis(host=ECS_ip, port=6379, db=0)
 resulted_pool = list()
 
-ECS_ip = get_ip_address('eth0')
-dir_name = ''
-# %% func ############################################################
 
-# #### %% func ###############################################
+# %% func ############################################################
 
 
 def hdfs_check():
@@ -235,6 +232,7 @@ if __name__ == "__main__":
     args = sys.argv
     print args[1::]
     args = args[1::]
+    dir_name = ''
     for arg in args:
         dir_name += arg
     print dir_name
