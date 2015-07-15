@@ -232,9 +232,11 @@ if __name__ == "__main__":
     args = sys.argv
     print args[1::]
     args = args[1::]
-    dir_name = ''
-    for arg in args:
-        dir_name += arg
+    dir_name = args[0]
+    i = 1
+    while i < len(args):
+	dir_name += args[i]
+	i += 2 
     print dir_name
     hdfs_check()
     mr_data = hdfs_read()
