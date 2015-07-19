@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
-##: temp setting:
-#ECS_ip = '192.168.1.5'
+# #: temp setting:
+# ECS_ip = '192.168.1.5'
 
 import socket
 import fcntl
@@ -20,7 +20,20 @@ def get_ip_address(ifname):
 ECS_ip = get_ip_address('eth0')
 
 
-######################### 
+#: logging setting
+import logging
+log_file = '/opt/logs/py_hadoop.log'
+
+logging.basicConfig(filename=log_file+'.debug', format='%(asctime)s %(levelname)s :: %(message)s',
+                    filemode='w', level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
+ch = logging.StreamHandler()
+ch.setLevel(logging.INFO)  #: or ## logger.setLevel(logging.INFO)
+logger.addHandler(ch)
+
+
+# ########################
 
 
 import redis
@@ -41,7 +54,7 @@ def hdfs_check():
     # hdfs_succ = p_succ.communicate()
     p_succ.communicate()
     if p_succ.returncode:
-        print("#:: No _SUCCESS!")
+        logger.info("#:: No _SUCCESS!")
         exit(2)
 
 
@@ -51,7 +64,7 @@ def hdfs_read():
     mr_result = p_part.communicate()
     mr_data0 = None
     if p_part.returncode:
-        print("#:: No MapReduced!")
+        logger.info("#:: No MapReduced!")
         exit(2)
     else:
         mr_data0 = mr_result[0]
@@ -63,7 +76,7 @@ def hdfs_parse(mr_data0):
     a = mr_data0.rstrip('\n')
 
     if len(a) == 0:
-        print('nothing is in hdfs')
+        logger.info('nothing is in hdfs')
         exit(0)
     aa = a.split('\n')
 
@@ -83,10 +96,10 @@ def hdfs_parse(mr_data0):
 def redis_update(my_pipeline=redis.Redis.pipeline(redis_client)):
     for element in pool_redis:
         if element != 'profiting':
-            print('%s decreased by %s' % (element, pool_redis[element]))
+            logger.info('%s decreased by %s' % (element, pool_redis[element]))
             my_pipeline.incrbyfloat(element, -float(pool_redis[element]))
         else:
-            print('%s increased by %s' % (element, pool_redis[element]))
+            logger.info('%s increased by %s' % (element, pool_redis[element]))
             my_pipeline.incrbyfloat(element, float(pool_redis[element]))
 
 
@@ -129,7 +142,7 @@ def is_contains_key(key0, set0):
 def aliveinvestment_modified(args0):
     code = args0[0]
     result = get_match_key(args0)
-    print(result)
+    logger.info(result)
     fuzzy_key = '(allUp*' + code + '*aliveInvestment'
     # find all aliveInvestment which contains current match(code)
     hkeys = redis_client.keys(fuzzy_key)
@@ -143,7 +156,7 @@ def aliveinvestment_modified(args0):
                 # add the clause to resulted pool if it is sure to win
                 if int(hincrby) == 0:
                     resulted_pool.append(hkey)
-                print('hkey:%s with key:%s has been decreased by 1' % (hkey, key))
+                logger.info('hkey:%s with key:%s has been decreased by 1' % (hkey, key))
             # if not winning
             else:
                 # value is set to -1 directly
@@ -158,7 +171,7 @@ def aliveinvestment_modified(args0):
                 if flag:
                     resulted_pool.append(hkey)
 
-                print('hkey:%s with key:%s has been set to -1' % (hkey, key))
+                logger.info('hkey:%s with key:%s has been set to -1' % (hkey, key))
 
 
 ####################################################################################
@@ -179,8 +192,8 @@ def update_min_position(code):
                     position = float(redis_client.hget(key1.replace('minPosition', 'position'), key2))
                     
                 except Exception as e:
-                    print(e)
-                    print('%s %s do not exist' % (key1.replace('minPosition', 'position', key2)))
+                    logger.info(e)
+                    logger.info('%s %s do not exist' % (key1.replace('minPosition', 'position', key2)))
                 if position < min_num:
                     min_num = position
 
@@ -191,18 +204,18 @@ def totalaliveinvestment_decrease(args0):
     # single first
     result = get_match_key(args0)
     for i in range(len(result) - 1):
-        total_price = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalPrice' + args0[2 * i + 2])
+        # total_price = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalPrice' + args0[2 * i + 2])
         total_invest = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalInvest')
         try:
             redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
             # remove current single minimum position from risk investment
             redis_client.delete(args0[0] + args0[2 * i + 1] + 'minPosition')
         except Exception as e:
-            print(e)
-            print('Single data missed')
+            logger.info(e)
+            logger.info('Single data missed')
 
     # then all up
-    print resulted_pool
+    logger.info(resulted_pool)
     for pool in resulted_pool:
         hkey = pool.replace('aliveInvestment', 'investment')
         total_investment = redis_client.hget(hkey, 'totalInvestment')
@@ -211,8 +224,8 @@ def totalaliveinvestment_decrease(args0):
             # remove current all up minimum position from risk investment
             redis_client.delete(pool.replace('aliveInvestment', 'minPosition'))
         except Exception as e:
-            print(e)
-            print('Allup data missed')
+            logger.info(e)
+            logger.info('Allup data missed')
 
 
 ######################################################################################
@@ -222,28 +235,29 @@ def hdfs_rmdir():
     # hdfs_rm = p_rm.communicate()
     p_rm.communicate()
     if p_rm.returncode:
-        print('##: Remove mapreduce result failed!')
+        logger.info('##: Remove mapreduce result failed!')
         exit(3)
     else:
-        print('##: Data cleared!')
+        logger.info('##: Data cleared!')
 
 
 if __name__ == "__main__":
     args = sys.argv
-    print args[1::]
+    logger.info(args[1::])
     args = args[1::]
     dir_name = args[0]
-    i = 1
-    while i < len(args):
-	dir_name += args[i]
-	i += 2 
-    print dir_name
+    j = 1
+    while j < len(args):
+        dir_name += args[j]
+        j += 2
+
+    logger.info(dir_name)
     hdfs_check()
     mr_data = hdfs_read()
     pool_redis = hdfs_parse(mr_data)
-    print pool_redis
+    logger.info(pool_redis)
     allupaliveinvestment_decrease(pool_redis)
     aliveinvestment_modified(args)
     update_min_position(args[0])
     totalaliveinvestment_decrease(args)
-    # pr.hdfs_rmdir()
+    # hdfs_rmdir()
