@@ -150,7 +150,7 @@ def aliveinvestment_modified(args0):
         keys = redis_client.hkeys(hkey)
         for key in keys:
             # if the clause contains winning option
-            if is_contains_key(key, result):
+            if is_contains_key(key, result) and redis_client.hget(hkey, key) != '-1':
                 # value(alive_m) is decreased by 1
                 hincrby = redis_client.hincrby(hkey, key, -1)
                 # add the clause to resulted pool if it is sure to win
