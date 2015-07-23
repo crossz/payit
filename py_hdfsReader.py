@@ -77,16 +77,17 @@ def hdfs_parse(mr_data0):
 
     if len(a) == 0:
         logger.info('nothing is in hdfs')
-        exit(0)
-    aa = a.split('\n')
-
-    pool_redis0 = dict()
-
-    for b in aa:
-        bb = b.split('\t')
-        pool_redis0[bb[0]] = bb[1]
-
-    return pool_redis0
+        return {}
+    else:
+        aa = a.split('\n')
+    
+        pool_redis0 = dict()
+    
+        for b in aa:
+            bb = b.split('\t')
+            pool_redis0[bb[0]] = bb[1]
+    
+        return pool_redis0
 
 
 ##################################################################
@@ -149,7 +150,7 @@ def aliveinvestment_modified(args0):
     for hkey in hkeys:
         keys = redis_client.hkeys(hkey)
         for key in keys:
-            # if the clause contains winning option
+            # if the clause contains winning option and is not dead
             if is_contains_key(key, result) and redis_client.hget(hkey, key) != '-1':
                 # value(alive_m) is decreased by 1
                 hincrby = redis_client.hincrby(hkey, key, -1)
@@ -250,13 +251,13 @@ if __name__ == "__main__":
     while j < len(args):
         dir_name += args[j]
         j += 2
-
     logger.info(dir_name)
     hdfs_check()
     mr_data = hdfs_read()
     pool_redis = hdfs_parse(mr_data)
-    logger.info(pool_redis)
-    allupaliveinvestment_decrease(pool_redis)
+    if len(pool_redis) != 0:
+        logger.info(pool_redis)
+        allupaliveinvestment_decrease(pool_redis)
     aliveinvestment_modified(args)
     update_min_position(args[0])
     totalaliveinvestment_decrease(args)
