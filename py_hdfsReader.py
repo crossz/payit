@@ -95,8 +95,12 @@ def hdfs_parse(mr_data0):
 import datetime
 import MySQLdb
 
+usr = 'caiex'
+pwd = '12345678'
+
+conn = MySQLdb.connect(host=ECS_ip,user=usr,passwd=pwd,db="caiex",charset="utf8")
+
 def sepreate_DML(pool_redis0):
-    conn = MySQLdb.connect(host='192.168.1.137',user="root",passwd="123123",db="caiex",charset="utf8")
     cu = conn.cursor()
     
     for element in pool_redis0.keys():
