@@ -1,4 +1,6 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 
 # #: temp setting:
 # ECS_ip = '192.168.1.5'
