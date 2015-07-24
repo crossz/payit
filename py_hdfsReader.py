@@ -98,7 +98,7 @@ import MySQLdb
 usr = 'caiex'
 pwd = '12345678'
 
-conn = MySQLdb.connect(host=ECS_ip,user=usr,passwd=pwd,db="caiex",charset="utf8")
+conn = MySQLdb.connect(host=ECS_ip, user=usr, passwd=pwd, db="caiex",charset="utf8")
 
 def sepreate_DML(pool_redis0):
     cu = conn.cursor()
@@ -251,7 +251,9 @@ def totalaliveinvestment_decrease(args0):
         try:
             redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
             # remove current single minimum position from risk investment
-            redis_client.delete(args0[0] + args0[2 * i + 1] + 'minPosition')
+            minPosKey = args0[0] + args0[2 * i + 1] + 'minPosition'
+            redis_client.delete(minPosKey)
+            logger.info('Single minPosition has been deleted:' + minPosKey)
         except Exception as e:
             logger.info(e)
             logger.info('Single data missed')
@@ -264,7 +266,9 @@ def totalaliveinvestment_decrease(args0):
         try:
             redis_client.incrbyfloat('TotalAliveInvestment', -float(total_investment))
             # remove current all up minimum position from risk investment
-            redis_client.delete(pool.replace('aliveInvestment', 'minPosition'))
+            minPosKey = pool.replace('aliveInvestment', 'minPosition')
+            redis_client.delete(minPosKey)
+            logger.info('Allup minPosition has been deleted' + minPosKey)
         except Exception as e:
             logger.info(e)
             logger.info('Allup data missed')
