@@ -17,6 +17,6 @@ fi
 sudo python py_hdfsReader.py $* >> /opt/logs/py_hadoop.log 2>&1
 echo '::'$?
 
-echo $* >> /opt/logs/py_hadoop.log
+sudo echo $* >> /opt/logs/py_hadoop.log
 
 
