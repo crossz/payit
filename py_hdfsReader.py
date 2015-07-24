@@ -88,6 +88,43 @@ def hdfs_parse(mr_data0):
             pool_redis0[bb[0]] = bb[1]
     
         return pool_redis0
+    
+##################################################################
+# before first step
+# execute DMLs and seprate them from pool_redis
+import datetime
+import MySQLdb
+
+def sepreate_DML(pool_redis0):
+    conn = MySQLdb.connect(host='192.168.1.137',user="root",passwd="123123",db="caiex",charset="utf8")
+    cu = conn.cursor()
+    
+    for element in pool_redis0.keys():
+        if 'sid' in element:
+            status_code = element[-1]
+            logger.info(element)
+            sql = pool_redis0[element]
+            #last match to payout
+            if status_code == '1':
+                time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+                param = (time)
+                cu.execute(sql, param)
+            #payout but not the last match
+            elif status_code == '2':
+                cu.execute(sql)
+            #dead end
+            elif status_code == '3':
+                time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
+                param = (time)
+                cu.execute(sql, param)
+            
+            del pool_redis0[element]
+    
+    conn.commit()
+    cu.close()
+    conn.close()
+    
+    return pool_redis0
 
 
 ##################################################################
@@ -255,7 +292,9 @@ if __name__ == "__main__":
     hdfs_check()
     mr_data = hdfs_read()
     pool_redis = hdfs_parse(mr_data)
+    #if the pool_redis is empty, skip those function depending on pool_redis
     if len(pool_redis) != 0:
+        pool_redis = sepreate_DML(pool_redis)
         logger.info(pool_redis)
         allupaliveinvestment_decrease(pool_redis)
     aliveinvestment_modified(args)
