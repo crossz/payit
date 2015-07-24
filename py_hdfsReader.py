@@ -249,14 +249,15 @@ def totalaliveinvestment_decrease(args0):
     result = get_match_key(args0)
     for i in range(len(result)):
         # total_price = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalPrice' + args0[2 * i + 2])
-        total_invest = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalInvest')
         try:
             # remove current single minimum position from risk investment
             minPosKey = args0[0] + args0[2 * i + 1] + 'minPosition'
             redis_client.delete(minPosKey)
-            
-            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
             logger.info('Single minPosition has been deleted:' + minPosKey)
+            
+            total_invest = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalInvest')
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
+            logger.info('TotalAliveInvestment decreased by ' + total_invest + ' from ' + args0[0] + args0[2 * i + 1])
         except Exception as e:
             logger.info(e)
             logger.info(minPosKey + 'Single data missed')
@@ -265,14 +266,15 @@ def totalaliveinvestment_decrease(args0):
     logger.info(resulted_pool)
     for pool in resulted_pool:
         hkey = pool.replace('aliveInvestment', 'investment')
-        total_investment = redis_client.hget(hkey, 'totalInvestment')
         try:
             # remove current all up minimum position from risk investment
             minPosKey = pool.replace('aliveInvestment', 'minPosition')
             redis_client.delete(minPosKey)
-            
-            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_investment))
             logger.info('Allup minPosition has been deleted' + minPosKey)
+            
+            total_investment = redis_client.hget(hkey, 'totalInvestment')
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_investment))
+            logger.info('TotalAliveInvestment decreased by ' + total_investment + ' from ' + hkey)
         except Exception as e:
             logger.info(e)
             logger.info(minPosKey + 'Allup data missed')
