@@ -247,14 +247,15 @@ def update_min_position(code):
 def totalaliveinvestment_decrease(args0):
     # single first
     result = get_match_key(args0)
-    for i in range(len(result) - 1):
+    for i in range(len(result)):
         # total_price = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalPrice' + args0[2 * i + 2])
         total_invest = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalInvest')
         try:
-            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
             # remove current single minimum position from risk investment
             minPosKey = args0[0] + args0[2 * i + 1] + 'minPosition'
             redis_client.delete(minPosKey)
+            
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
             logger.info('Single minPosition has been deleted:' + minPosKey)
         except Exception as e:
             logger.info(e)
@@ -266,10 +267,11 @@ def totalaliveinvestment_decrease(args0):
         hkey = pool.replace('aliveInvestment', 'investment')
         total_investment = redis_client.hget(hkey, 'totalInvestment')
         try:
-            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_investment))
             # remove current all up minimum position from risk investment
             minPosKey = pool.replace('aliveInvestment', 'minPosition')
             redis_client.delete(minPosKey)
+            
+            redis_client.incrbyfloat('TotalAliveInvestment', -float(total_investment))
             logger.info('Allup minPosition has been deleted' + minPosKey)
         except Exception as e:
             logger.info(e)
