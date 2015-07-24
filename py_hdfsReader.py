@@ -278,7 +278,6 @@ def totalaliveinvestment_decrease(args0):
             logger.info(minPosKey + 'Allup data missed')
 
 
-
 ######################################################################################
 def hdfs_rmdir():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
