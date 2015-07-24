@@ -102,7 +102,7 @@ def sepreate_DML(pool_redis0):
     for element in pool_redis0.keys():
         if 'sid' in element:
             status_code = element[-1]
-            print(status_code)
+            logger.info(status_code)
             sql = pool_redis0[element]
             #last match to payout
             if status_code == '1':
