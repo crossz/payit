@@ -2,7 +2,7 @@
 
 cd /opt/hadoop/payit/
 
-date > /opt/logs/py_hadoop.log
+sudo date > /opt/logs/py_hadoop.log
 
 echo $* >> /opt/logs/py_hadoop.log
 
