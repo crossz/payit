@@ -1,26 +1,13 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
-# #: temp setting:
-# ECS_ip = '192.168.1.5'
-
-import socket
-import fcntl
-import struct
-
-
-def get_ip_address(ifname):
-    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    return socket.inet_ntoa(fcntl.ioctl(
-        s.fileno(),
-        0x8915,  # SIOCGIFADDR
-        struct.pack('256s', ifname[:15])
-    )[20:24])
-
-
-ECS_ip = get_ip_address('eth0')
-
+# %% configuration #############################
+import ConfigParser
+conf=ConfigParser.ConfigParser()
+conf.read('config.properties')
+redis_url = conf.get('service_ip','redisURL')
+# mysql_url = conf.get('mysqlURL')
+ECS_ip = redis_url
 
 #: logging setting
 import logging
@@ -36,8 +23,6 @@ logger.addHandler(ch)
 
 
 # ########################
-
-
 import redis
 import sys
 from subprocess import Popen, PIPE
@@ -47,9 +32,7 @@ redis_client = redis.Redis(host=ECS_ip, port=6379, db=0)
 resulted_pool = list()
 
 
-# %% func ############################################################
-
-
+# %% func ######################################
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /' + dir_name + '/_SUCCESS'
     p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
