@@ -1,13 +1,26 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-# %% configuration #############################
-import ConfigParser
-conf=ConfigParser.ConfigParser()
-conf.read('config.properties')
-redis_url = conf.get('service_ip','redisURL')
-# mysql_url = conf.get('mysqlURL')
-ECS_ip = redis_url
+
+# #: temp setting:
+# ECS_ip = '192.168.1.5'
+
+import socket
+import fcntl
+import struct
+
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', ifname[:15])
+    )[20:24])
+
+
+ECS_ip = get_ip_address('eth0')
+
 
 #: logging setting
 import logging
@@ -23,6 +36,8 @@ logger.addHandler(ch)
 
 
 # ########################
+
+
 import redis
 import sys
 from subprocess import Popen, PIPE
@@ -32,7 +47,9 @@ redis_client = redis.Redis(host=ECS_ip, port=6379, db=0)
 resulted_pool = list()
 
 
-# %% func ######################################
+# %% func ############################################################
+
+
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /' + dir_name + '/_SUCCESS'
     p_succ = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
@@ -91,7 +108,6 @@ def sepreate_DML(pool_redis0):
     for element in pool_redis0.keys():
         if 'sid' in element:
             status_code = element[-1]
-            logger.info(element)
             sql = pool_redis0[element]
             #last match to payout
             if status_code == '1':
@@ -240,6 +256,7 @@ def totalaliveinvestment_decrease(args0):
             
             total_invest = redis_client.get(args0[0] + args0[2 * i + 1] + 'totalInvest')
             redis_client.incrbyfloat('TotalAliveInvestment', -float(total_invest))
+            redis_client.incrbyfloat('DeadInvestment', float(total_invest))
             logger.info('TotalAliveInvestment decreased by ' + total_invest + ' from ' + args0[0] + args0[2 * i + 1])
         except Exception as e:
             logger.info(e)
@@ -257,6 +274,7 @@ def totalaliveinvestment_decrease(args0):
             
             total_investment = redis_client.hget(hkey, 'totalInvestment')
             redis_client.incrbyfloat('TotalAliveInvestment', -float(total_investment))
+            redis_client.incrbyfloat('DeadInvestment', float(total_investment))
             logger.info('TotalAliveInvestment decreased by ' + total_investment + ' from ' + hkey)
         except Exception as e:
             logger.info(e)
@@ -264,8 +282,8 @@ def totalaliveinvestment_decrease(args0):
 
 
 ######################################################################################
-def hdfs_rmdir():
-    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r /user'
+def hdfs_rmdir(dirName):
+    cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -rm -r ' + dirName
     p_rm = Popen(cmd.split(), stdin=PIPE, stdout=PIPE)
     # hdfs_rm = p_rm.communicate()
     p_rm.communicate()
@@ -297,4 +315,4 @@ if __name__ == "__main__":
     aliveinvestment_modified(args)
     update_min_position(args[0])
     totalaliveinvestment_decrease(args)
-    # hdfs_rmdir()
+#     hdfs_rmdir()
