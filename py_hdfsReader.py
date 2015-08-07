@@ -23,7 +23,7 @@ def get_ip_address(ifname):
 
 
 #ECS_ip = get_ip_address('eth0')
-ECS_ip = conf.get('redis', 'redis_ip')
+redis_ip = conf.get('redis', 'redis_ip')
 
 
 #: logging setting
@@ -47,7 +47,7 @@ import sys
 from subprocess import Popen, PIPE
 # from redis.exceptions import WatchError
 
-redis_client = redis.Redis(host=ECS_ip, port=6379, db=0)
+redis_client = redis.Redis(host=redis_ip, port=6379, db=0)
 resulted_pool = list()
 
 
