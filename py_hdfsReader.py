@@ -4,7 +4,7 @@
 #read config
 import ConfigParser
 conf = ConfigParser.ConfigParser()
-
+conf.read('config')
 # #: temp setting:
 # ECS_ip = '192.168.1.5'
 
