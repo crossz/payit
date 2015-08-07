@@ -1,6 +1,9 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+#read config
+import ConfigParser
+conf = ConfigParser.ConfigParser()
 
 # #: temp setting:
 # ECS_ip = '192.168.1.5'
@@ -19,7 +22,8 @@ def get_ip_address(ifname):
     )[20:24])
 
 
-ECS_ip = get_ip_address('eth0')
+#ECS_ip = get_ip_address('eth0')
+ECS_ip = conf.get('redis', 'redis_ip')
 
 
 #: logging setting
@@ -97,10 +101,11 @@ def hdfs_parse(mr_data0):
 import datetime
 import MySQLdb
 
-usr = 'caiex'
-pwd = '12345678'
+usr = conf.get('db', 'mysql_user')
+pwd = conf.get('db', 'mysql_password')
+db_ip = conf.get('db', 'mysql_ip')
 
-conn = MySQLdb.connect(host=ECS_ip, user=usr, passwd=pwd, db="caiex",charset="utf8")
+conn = MySQLdb.connect(host=db_ip, user=usr, passwd=pwd, db="caiex",charset="utf8")
 
 def sepreate_DML(pool_redis0):
     cu = conn.cursor()
