@@ -60,7 +60,7 @@ def notifySBC(args, result):
     for arg in args[1::2]:
         products += arg + '_'
     params += 'product=' + products[:-1:] + '&&result=' + result + '&&payCancel=0' 
-    print(params)
+    logger.info(params)
     server = xmlrpclib.ServerProxy('http://192.168.1.131:8080/SBC/matchSend/sbcPay.do?' + params)
     server.sbcPay()
 
@@ -332,6 +332,5 @@ if __name__ == "__main__":
     aliveinvestment_modified(args)
     update_min_position(args[0])
     totalaliveinvestment_decrease(args)
-    
     notifySBC(args, '0')
 #     hdfs_rmdir()
