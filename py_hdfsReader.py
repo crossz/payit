@@ -55,14 +55,23 @@ import xmlrpclib
 
 def notifySBC(args, result):
 #     product=HHAD&&match_code=3022&&result=1
+    print('111111')
     params = 'match_code=' + args[0] + '&&'
+    print('222222')
     products = ''
+    print('333333')
     for arg in args[1::2]:
         products += arg + '_'
+        print('3.5')
+    print('444444')
     params += 'product=' + products[:-1:] + '&&result=' + result + '&&payCancel=0' 
+    print('555555')
     logger.info(params)
+    print('666666')
     server = xmlrpclib.ServerProxy('http://192.168.1.131:8080/SBC/matchSend/sbcPay.do?' + params)
+    print('777777')
     server.sbcPay()
+    print('88888')
 
 
 # %% func ############################################################
@@ -332,5 +341,7 @@ if __name__ == "__main__":
     aliveinvestment_modified(args)
     update_min_position(args[0])
     totalaliveinvestment_decrease(args)
+    print('000000')
     notifySBC(args, '0')
+    print('99999')
 #     hdfs_rmdir()
