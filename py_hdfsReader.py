@@ -50,9 +50,20 @@ from subprocess import Popen, PIPE
 redis_client = redis.Redis(host=redis_ip, port=6379, db=0)
 resulted_pool = list()
 
+##### notify sbc #####################################################################
+def notifySBC(args, result):
+#     product=HHAD&&match_code=3022&&result=1
+    params = 'match_code=' + args[0] + '&&'
+    products = ''
+    for arg in args[1::2]:
+        products += arg + '_'
+    params += 'product=' + products[:-1:] + '&&result=' + result + '&&payCancel=0' 
+    print(params)
+    server = xmlrpclib.ServerProxy('http://192.168.1.131:8080/SBC/matchSend/sbcPay.do?' + params)
+    server.sbcPay()
+
 
 # %% func ############################################################
-
 
 def hdfs_check():
     cmd = '/opt/hadoop-2.7.0/bin/hdfs dfs -cat /' + dir_name + '/_SUCCESS'
@@ -298,7 +309,6 @@ def hdfs_rmdir(dirName):
     else:
         logger.info('##: Data cleared!')
 
-
 if __name__ == "__main__":
     args = sys.argv
     logger.info(args[1::])
@@ -320,4 +330,6 @@ if __name__ == "__main__":
     aliveinvestment_modified(args)
     update_min_position(args[0])
     totalaliveinvestment_decrease(args)
+    
+    notifySBC(args, '0')
 #     hdfs_rmdir()
