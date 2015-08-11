@@ -3,6 +3,7 @@
 cd /opt/hadoop/payit/
 
 sudo date >> /opt/logs/py_hadoop.log
+echo '::0'
 
 echo $* >> /opt/logs/py_hadoop.log
 
