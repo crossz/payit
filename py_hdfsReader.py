@@ -51,6 +51,8 @@ redis_client = redis.Redis(host=redis_ip, port=6379, db=0)
 resulted_pool = list()
 
 ##### notify sbc #####################################################################
+import xmlrpclib
+
 def notifySBC(args, result):
 #     product=HHAD&&match_code=3022&&result=1
     params = 'match_code=' + args[0] + '&&'
