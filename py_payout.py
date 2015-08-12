@@ -10,7 +10,6 @@ def hadoop_pay(args):
         print("## ERROR: Hadoop payout failed!")
         exit(2) 
 
-
 import sys
 from subprocess import Popen,PIPE
 if __name__ == "__main__":
