@@ -3,7 +3,7 @@
 ########### read config ##################################
 import ConfigParser
 conf = ConfigParser.ConfigParser()
-conf.read('config')
+conf.read('/opt/hadoop/payit/config')
 
 local_server_ip = conf.get('rpc', 'local_server_ip')
 
